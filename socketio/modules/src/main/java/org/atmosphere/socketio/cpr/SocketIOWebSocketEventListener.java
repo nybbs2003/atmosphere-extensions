@@ -16,6 +16,8 @@
 package org.atmosphere.socketio.cpr;
 
 import java.io.IOException;
+import java.util.Base64;
+import java.util.Collections;
 import java.util.List;
 
 import org.atmosphere.cpr.AtmosphereResourceImpl;
@@ -25,6 +27,8 @@ import org.atmosphere.socketio.SocketIOWebSocketSessionWrapper;
 import org.atmosphere.socketio.transport.SocketIOPacketImpl;
 import org.atmosphere.socketio.transport.SocketIOPacketImpl.PacketType;
 import org.atmosphere.websocket.WebSocketEventListenerAdapter;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +65,19 @@ public class SocketIOWebSocketEventListener extends WebSocketEventListenerAdapte
         } else {
             List<SocketIOPacketImpl> messages = null;
             try {
-                messages = SocketIOPacketImpl.parse(event.message().toString());
+                if (event.message() instanceof byte[]) {
+                	String blob = Base64.getEncoder().encodeToString((byte[])event.message());
+                	JSONObject jobj = new JSONObject();
+                	jobj.put("name","blob");
+                	JSONObject jobj1 = new JSONObject();
+                	jobj1.put("blob",blob);
+                	JSONArray jarr = new JSONArray();
+                	jarr.put(jobj1.toString());
+                	jobj.put("args",jarr);
+                	messages = Collections.singletonList(new SocketIOPacketImpl(SocketIOPacketImpl.PacketType.EVENT,"","",jobj.toString()));
+                }else{
+					messages = SocketIOPacketImpl.parse(event.message().toString());
+				}
             } catch (SocketIOException e) {
                 logger.warn("", e);
             }

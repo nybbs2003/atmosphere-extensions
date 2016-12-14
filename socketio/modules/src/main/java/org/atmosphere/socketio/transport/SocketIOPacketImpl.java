@@ -269,4 +269,14 @@ public class SocketIOPacketImpl implements SocketIOPacket {
         }
     }
 
+	@Override
+	public boolean isBinary() {
+		return false;
+	}
+
+	@Override
+	public byte[] getBinary() {
+		return null;
+	}
+
 }

@@ -20,6 +20,7 @@ package org.atmosphere.socketio;
  */
 public interface SocketIOPacket {
 
-    String toString();
-
+	boolean isBinary();
+	
+	byte[] getBinary();
 }

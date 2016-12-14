@@ -36,6 +36,7 @@ import org.atmosphere.socketio.SocketIOWebSocketSessionWrapper;
 import org.atmosphere.socketio.cpr.SocketIOAtmosphereHandler;
 import org.atmosphere.socketio.cpr.SocketIOWebSocketEventListener;
 import org.atmosphere.websocket.WebSocket;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -164,11 +165,16 @@ public class WebSocketTransport extends AbstractTransport {
         @Override
         public void sendMessage(SocketIOPacket packet) throws SocketIOException {
             if (packet != null) {
-                sendMessage(packet.toString());
+            	if(packet.isBinary()){
+            		sendMessage(packet.getBinary());
+            	}else{
+            		sendMessage(packet.toString());
+                }
             }
         }
 
-        @Override
+
+		@Override
         public void sendMessage(List<SocketIOPacketImpl> messages) throws SocketIOException {
             if (messages != null) {
                 for (SocketIOPacketImpl msg : messages) {
@@ -188,13 +194,8 @@ public class WebSocketTransport extends AbstractTransport {
             }
         }
 
-        /*
-           * (non-Javadoc)
-           * @see com.glines.socketio.SocketIOInbound.SocketIOOutbound#sendMessage(java.lang.String)
-           */
-        @Override
-        public void sendMessage(String message) throws SocketIOException {
-            logger.trace("calling from " + this.getClass().getName() + " : " + "sendMessage(string) = " + message);
+        public void sendMessage(byte[] message) throws SocketIOException {
+            logger.trace("calling from " + this.getClass().getName() + " : " + "sendMessage(byte[]) = " + message);
 
             if (webSocket != null) {
                 try {
@@ -202,6 +203,37 @@ public class WebSocketTransport extends AbstractTransport {
                     logger.trace("WRITE SUCCESS : calling from " + this.getClass().getName() + " : " + "sendMessage(string) = " + message);
                 } catch (IOException e) {
                 	throw new SocketIOException(e);
+                }
+            } else {
+                logger.warn("WebSOCKET NULL");
+            }
+
+		}
+
+        @Override
+        public void sendMessage(String message) throws SocketIOException {
+            logger.trace("calling from " + this.getClass().getName() + " : " + "sendMessage(string) = " + message);
+
+            if (webSocket != null) {
+            	String[] strs = message.split(":", 4);
+            	JSONObject jobj = new JSONObject(strs[3]);
+            	if(jobj.getString("name").equals("blob")){
+	                try {
+	                	String str = jobj.getJSONArray("args").getString(0);
+	            		byte[] b_arr = str.getBytes();
+	                    webSocket.write(b_arr);
+	                    logger.trace("WRITE SUCCESS : calling from " + this.getClass().getName() + " : " + "sendMessage(string) = " + message);
+	                } catch (IOException e) {
+	                	throw new SocketIOException(e);
+	                }
+            		
+            	}else{
+	                try {
+	                    webSocket.write(message);
+	                    logger.trace("WRITE SUCCESS : calling from " + this.getClass().getName() + " : " + "sendMessage(string) = " + message);
+	                } catch (IOException e) {
+	                	throw new SocketIOException(e);
+	                }
                 }
             } else {
                 logger.warn("WebSOCKET NULL");
